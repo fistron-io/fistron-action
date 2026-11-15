@@ -50,6 +50,16 @@ jobs:
 4. **The comment:** the causes, each fix and how it was verified, and what
    the model used today and this month; "Analysed by Fistron".
 
+## Set it up, and see what a run did
+
+```bash
+fistron ci-setup     # writes this workflow for your repository, as a pull request
+fistron ci-status    # the last run: its licence, the failed jobs, the fixes, the model's use
+```
+
+Each run keeps what it got and did as the artifact `fistron` (`status.json`
+and the comment), which `fistron ci-status` reads.
+
 ## Your credit does not burn
 
 - The same failure again is answered from what was concluded, no model call.
@@ -82,6 +92,7 @@ verified or offered.
 | `verify` | | the command that runs the failed tests in Fistron's image, `{tests}` being them |
 | `verify-workflow` | | your CI's workflow file: it verifies each fix on a branch of its own (needs `workflow_dispatch:` and `actions: write`) |
 | `publish` | `true` | the comment, suggestions and pull requests; `false`: the job summary only |
+| `rules` | `false` | `true`: no model, whatever your licence includes: the causes by Rules, no fix written |
 | `image` | this release's, by digest | Fistron's image with its closed core |
 | `daily-cap-eur`, `monthly-cap-eur` | your licence's | the model's caps in this repository's CI |
 | `control-plane-url` | | Team and above: your organisation's control plane |

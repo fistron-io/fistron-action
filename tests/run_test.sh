@@ -37,6 +37,11 @@ grep -q '"propose-code-fix" = "propose"' <<<"$config" || fail "the fix's action"
 if grep -q '\[llm\]' <<<"$config"; then fail "an own model without its URL"; fi
 grep -q 'fistron ci-fix "\$@"' "$tmp/temp/fistron/inside.sh" || fail "the inside script"
 
+if grep -qx -- '--rules' <<<"$args"; then fail "--rules without the input"; fi
+
+run FISTRON_RULES=true
+grep -qx -- '--rules' "$tmp/args" || fail "no --rules"
+
 run FISTRON_PUBLISH=false FISTRON_MODEL_BASE_URL=https://llm.example.test/v1 FISTRON_MODEL_NAME=m
 args="$(cat "$tmp/args")"
 config="$(cat "$tmp/temp/fistron/fistron.toml")"

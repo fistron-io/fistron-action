@@ -35,6 +35,7 @@ if [ -n "${FISTRON_VERIFY_WORKFLOW:-}" ]; then
   args+=(--verify-workflow "$FISTRON_VERIFY_WORKFLOW")
 fi
 if [ "${FISTRON_PUBLISH:-true}" = "true" ]; then args+=(--publish); fi
+if [ "${FISTRON_RULES:-false}" = "true" ]; then args+=(--rules); fi
 if [ -n "${FISTRON_DAILY_CAP_EUR:-}" ]; then args+=(--daily-cap-eur "$FISTRON_DAILY_CAP_EUR"); fi
 if [ -n "${FISTRON_MONTHLY_CAP_EUR:-}" ]; then args+=(--monthly-cap-eur "$FISTRON_MONTHLY_CAP_EUR"); fi
 
