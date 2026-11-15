@@ -17,6 +17,14 @@ inputs:
       offered.
     required: false
     default: ""
+  verify-workflow:
+    description: >-
+      Your CI's workflow file (e.g. ci.yml), for a fix "verify" cannot check
+      here (another language, another toolchain): the fix goes on a branch
+      fistron/verify/..., your CI runs there (it needs workflow_dispatch:),
+      and the fix is offered when it passes. Needs actions: write.
+    required: false
+    default: ""
   publish:
     description: >-
       "true": the comment, the suggested changes and the pull requests of
@@ -86,6 +94,8 @@ runs:
         # every input through the environment, never into the script
         FISTRON_IMAGE: ${{ inputs.image }}
         FISTRON_VERIFY: ${{ inputs.verify }}
+        FISTRON_VERIFY_WORKFLOW: ${{ inputs.verify-workflow }}
+        FISTRON_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         FISTRON_PUBLISH: ${{ inputs.publish }}
         FISTRON_DAILY_CAP_EUR: ${{ inputs.daily-cap-eur }}
         FISTRON_MONTHLY_CAP_EUR: ${{ inputs.monthly-cap-eur }}

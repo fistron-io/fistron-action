@@ -17,10 +17,12 @@ permissions:
   contents: read
 jobs:
   fistron:
-    if: github.event.workflow_run.conclusion == 'failure'
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' ||
+      startsWith(github.event.workflow_run.head_branch, 'fistron/verify/')
     runs-on: ubuntu-24.04
     permissions:
-      actions: read
+      actions: write
       contents: write
       pull-requests: write
       id-token: write
@@ -41,8 +43,10 @@ jobs:
 2. **Every cause** of each failed job (`fistron ci`, then `fistron ci-fix`).
 3. **The fix:** a test that fails by its own fault is repaired; a cause in
    the code is fixed in the files it cites, never a test. Each is verified by
-   `verify` in a temporary copy of your checkout (a repaired test: 3 runs);
-   only a fix that passes is offered.
+   `verify` in a temporary copy of your checkout (a repaired test: 3 runs),
+   or, for any language, by your own CI (`verify-workflow`): the fix on a
+   branch `fistron/verify/...`, your CI started there, and the fix offered
+   when it passes. Only a fix that passes is offered.
 4. **The comment:** the causes, each fix and how it was verified, and what
    the model used today and this month; "Analysed by Fistron".
 
@@ -76,6 +80,7 @@ verified or offered.
 | Input | Default | |
 |---|---|---|
 | `verify` | | the command that runs the failed tests in Fistron's image, `{tests}` being them |
+| `verify-workflow` | | your CI's workflow file: it verifies each fix on a branch of its own (needs `workflow_dispatch:` and `actions: write`) |
 | `publish` | `true` | the comment, suggestions and pull requests; `false`: the job summary only |
 | `image` | this release's, by digest | Fistron's image with its closed core |
 | `daily-cap-eur`, `monthly-cap-eur` | your licence's | the model's caps in this repository's CI |
