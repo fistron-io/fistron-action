@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: The script
+        run: |
+          shellcheck run.sh tests/run_test.sh
+          bash tests/run_test.sh
+      - name: The action's metadata and the example workflow
+        run: |
+          python3 -c 'import yaml; yaml.safe_load(open("action.yml"))'
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -shellcheck= examples/fistron.yml .github/workflows/ci.yml

@@ -1,0 +1,105 @@
+name: Fistron
+description: >-
+  Every cause of a failed job and its fix, verified, on your pull request:
+  RCA, a repaired test or a fixed line as a suggested change or a pull
+  request of its own. No secret to set.
+author: Fistron
+branding:
+  icon: check-circle
+  color: orange
+
+inputs:
+  verify:
+    description: >-
+      The command that runs the failed tests in Fistron's image, {tests}
+      being them, e.g. "pip install -q -e .[test] && python -m pytest -q
+      {tests}". Empty: the fixes are written but not verified, so none is
+      offered.
+    required: false
+    default: ""
+  publish:
+    description: >-
+      "true": the comment, the suggested changes and the pull requests of
+      their own on GitHub (needs pull-requests: write, contents: write);
+      "false": the job's summary only.
+    required: false
+    default: "true"
+  image:
+    description: >-
+      Fistron's image with its closed core, pinned by digest (this release's
+      by default).
+    required: false
+    default: ghcr.io/fistron-io/fistron-core@sha256:0000000000000000000000000000000000000000000000000000000000000000
+  daily-cap-eur:
+    description: "The day's cap of the model in this repository's CI (default: your licence's)."
+    required: false
+    default: ""
+  monthly-cap-eur:
+    description: "The month's cap of the model in CI (default: your licence's share)."
+    required: false
+    default: ""
+  control-plane-url:
+    description: >-
+      Team and above: your organisation's control plane; the run's identity
+      token goes there instead of fistron-account (Fistron ADR 0171 point 2).
+    required: false
+    default: ""
+  model-base-url:
+    description: >-
+      Your own model (OpenAI-compatible, or a server on your runner): its
+      base URL. With the model plan and no own model, the included one.
+    required: false
+    default: ""
+  model-name:
+    description: "Your own model's name at that URL."
+    required: false
+    default: ""
+  model-api:
+    description: '"chat" (OpenAI-compatible) or "anthropic".'
+    required: false
+    default: chat
+  model-api-key:
+    description: >-
+      Your own model's key: pass a repository secret here
+      (secrets.FISTRON_LLM_API_KEY); never a pull request from a fork's.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Fistron's state (the model's use, the failures seen)
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+      with:
+        path: .fistron-ci
+        key: fistron-ci-${{ github.repository }}-${{ github.run_id }}
+        restore-keys: fistron-ci-${{ github.repository }}-
+    - name: The failed run's revision
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+        path: .fistron-repository
+        persist-credentials: false
+    - name: Fistron
+      shell: bash
+      env:
+        # every input through the environment, never into the script
+        FISTRON_IMAGE: ${{ inputs.image }}
+        FISTRON_VERIFY: ${{ inputs.verify }}
+        FISTRON_PUBLISH: ${{ inputs.publish }}
+        FISTRON_DAILY_CAP_EUR: ${{ inputs.daily-cap-eur }}
+        FISTRON_MONTHLY_CAP_EUR: ${{ inputs.monthly-cap-eur }}
+        FISTRON_CP_URL: ${{ inputs.control-plane-url }}
+        FISTRON_MODEL_BASE_URL: ${{ inputs.model-base-url }}
+        FISTRON_MODEL_NAME: ${{ inputs.model-name }}
+        FISTRON_MODEL_API: ${{ inputs.model-api }}
+        FISTRON_LLM_API_KEY: ${{ inputs.model-api-key }}
+        FISTRON_GITHUB_TOKEN: ${{ github.token }}
+        FISTRON_RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
+      run: '"$GITHUB_ACTION_PATH/run.sh"'
+    - name: Keep Fistron's state
+      if: ${{ !cancelled() }}
+      uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+      with:
+        path: .fistron-ci
+        key: fistron-ci-${{ github.repository }}-${{ github.run_id }}

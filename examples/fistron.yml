@@ -1,0 +1,32 @@
+# .github/workflows/fistron.yml: Fistron after your CI fails (Fistron ADR 0171).
+# It runs after the workflow named "ci" (change it to yours) and only when it
+# failed, in this repository's trusted context: a pull request from a fork
+# gets the causes, but its code is never run, so no fix is verified there.
+name: Fistron
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  fistron:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read          # the failed run, its jobs, logs and artifacts
+      contents: write        # a fix's branch (a pull request of its own)
+      pull-requests: write   # the comment and the suggested changes
+      id-token: write        # the run's identity token: the licence, no secret
+    steps:
+      - uses: fistron-io/fistron-action@0000000000000000000000000000000000000000  # v1
+        with:
+          # how your failed tests run in Fistron's image; {tests}: them
+          verify: pip install -q -e '.[test]' && python -m pytest -q {tests}
+          # your own model instead of the included one (optional):
+          # model-base-url: https://api.example.test/v1
+          # model-name: a-model
+          # model-api-key: ${{ secrets.FISTRON_LLM_API_KEY }}
