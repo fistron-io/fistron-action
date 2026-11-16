@@ -31,7 +31,11 @@ config="$work/fistron.toml"
 args=(--ci-output "$work/report" --repository .fistron-repository --state .fistron-ci
       --run-file "$work/fistron-run.json" --config "$config" --output "$work/ci-fix")
 if [ -n "${FISTRON_VERIFY:-}" ]; then args+=(--verify "$FISTRON_VERIFY"); fi
+if [ -n "${FISTRON_VERIFY_WORKFLOW:-}" ]; then
+  args+=(--verify-workflow "$FISTRON_VERIFY_WORKFLOW")
+fi
 if [ "${FISTRON_PUBLISH:-true}" = "true" ]; then args+=(--publish); fi
+if [ "${FISTRON_RULES:-false}" = "true" ]; then args+=(--rules); fi
 if [ -n "${FISTRON_DAILY_CAP_EUR:-}" ]; then args+=(--daily-cap-eur "$FISTRON_DAILY_CAP_EUR"); fi
 if [ -n "${FISTRON_MONTHLY_CAP_EUR:-}" ]; then args+=(--monthly-cap-eur "$FISTRON_MONTHLY_CAP_EUR"); fi
 
@@ -39,7 +43,8 @@ if [ -n "${FISTRON_MONTHLY_CAP_EUR:-}" ]; then args+=(--monthly-cap-eur "$FISTRO
 envs=(GITHUB_ACTIONS GITHUB_API_URL GITHUB_REPOSITORY GITHUB_SHA GITHUB_RUN_ID
       GITHUB_EVENT_PATH GITHUB_EVENT_NAME GITHUB_STEP_SUMMARY RUNNER_TEMP
       ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
-      FISTRON_GITHUB_TOKEN FISTRON_LLM_API_KEY FISTRON_CP_URL FISTRON_RUN_ID)
+      FISTRON_GITHUB_TOKEN FISTRON_LLM_API_KEY FISTRON_CP_URL FISTRON_RUN_ID
+      FISTRON_HEAD_BRANCH)
 docker_env=()
 for name in "${envs[@]}"; do docker_env+=(-e "$name"); done
 
@@ -49,6 +54,13 @@ cat > "$work/inside.sh" <<'INSIDE'
 set -uo pipefail
 work="$1"
 shift
+case "${FISTRON_HEAD_BRANCH:-}" in
+  fistron/verify/*)
+    # the run of a fix's verification ended: its verdict, no analysis, no model
+    fistron ci-fix "$@" || true
+    exit 0
+    ;;
+esac
 eval "$(fistron ci-licence --export --run-file "$work/fistron-run.json")" || true
 fistron ci --config "$work/fistron.toml" --output "$work/report" --run "$FISTRON_RUN_ID" || true
 fistron ci-fix "$@" || true

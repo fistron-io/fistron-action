@@ -14,10 +14,13 @@ permissions:
 
 jobs:
   fistron:
-    if: github.event.workflow_run.conclusion == 'failure'
+    # a failed run, or the end of a fix's verification by this CI (verify-workflow)
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' ||
+      startsWith(github.event.workflow_run.head_branch, 'fistron/verify/')
     runs-on: ubuntu-24.04
     permissions:
-      actions: read          # the failed run, its jobs, logs and artifacts
+      actions: write         # the failed run, its jobs and logs; verify-workflow starts your CI
       contents: write        # a fix's branch (a pull request of its own)
       pull-requests: write   # the comment and the suggested changes
       id-token: write        # the run's identity token: the licence, no secret
@@ -26,6 +29,9 @@ jobs:
         with:
           # how your failed tests run in Fistron's image; {tests}: them
           verify: pip install -q -e '.[test]' && python -m pytest -q {tests}
+          # or, for any language: your CI verifies each fix on a branch of its own
+          # (add `workflow_dispatch:` to its triggers)
+          # verify-workflow: ci.yml
           # your own model instead of the included one (optional):
           # model-base-url: https://api.example.test/v1
           # model-name: a-model

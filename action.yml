@@ -17,6 +17,14 @@ inputs:
       offered.
     required: false
     default: ""
+  verify-workflow:
+    description: >-
+      Your CI's workflow file (e.g. ci.yml), for a fix "verify" cannot check
+      here (another language, another toolchain): the fix goes on a branch
+      fistron/verify/..., your CI runs there (it needs workflow_dispatch:),
+      and the fix is offered when it passes. Needs actions: write.
+    required: false
+    default: ""
   publish:
     description: >-
       "true": the comment, the suggested changes and the pull requests of
@@ -30,6 +38,12 @@ inputs:
       by default).
     required: false
     default: ghcr.io/fistron-io/fistron-core@sha256:0000000000000000000000000000000000000000000000000000000000000000
+  rules:
+    description: >-
+      "true": no model, whatever your licence includes: the causes by
+      Fistron Sovereign Rules - Deterministic, no fix written.
+    required: false
+    default: "false"
   daily-cap-eur:
     description: "The day's cap of the model in this repository's CI (default: your licence's)."
     required: false
@@ -86,7 +100,10 @@ runs:
         # every input through the environment, never into the script
         FISTRON_IMAGE: ${{ inputs.image }}
         FISTRON_VERIFY: ${{ inputs.verify }}
+        FISTRON_VERIFY_WORKFLOW: ${{ inputs.verify-workflow }}
+        FISTRON_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         FISTRON_PUBLISH: ${{ inputs.publish }}
+        FISTRON_RULES: ${{ inputs.rules }}
         FISTRON_DAILY_CAP_EUR: ${{ inputs.daily-cap-eur }}
         FISTRON_MONTHLY_CAP_EUR: ${{ inputs.monthly-cap-eur }}
         FISTRON_CP_URL: ${{ inputs.control-plane-url }}
@@ -97,6 +114,16 @@ runs:
         FISTRON_GITHUB_TOKEN: ${{ github.token }}
         FISTRON_RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
       run: '"$GITHUB_ACTION_PATH/run.sh"'
+    - name: What this run got and did (fistron ci-status reads it)
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+      with:
+        name: fistron
+        path: |
+          ${{ runner.temp }}/fistron/ci-fix/status.json
+          ${{ runner.temp }}/fistron/ci-fix/comment.md
+        if-no-files-found: ignore
+        retention-days: 14
     - name: Keep Fistron's state
       if: ${{ !cancelled() }}
       uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5

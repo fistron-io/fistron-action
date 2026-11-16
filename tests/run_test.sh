@@ -37,6 +37,11 @@ grep -q '"propose-code-fix" = "propose"' <<<"$config" || fail "the fix's action"
 if grep -q '\[llm\]' <<<"$config"; then fail "an own model without its URL"; fi
 grep -q 'fistron ci-fix "\$@"' "$tmp/temp/fistron/inside.sh" || fail "the inside script"
 
+if grep -qx -- '--rules' <<<"$args"; then fail "--rules without the input"; fi
+
+run FISTRON_RULES=true
+grep -qx -- '--rules' "$tmp/args" || fail "no --rules"
+
 run FISTRON_PUBLISH=false FISTRON_MODEL_BASE_URL=https://llm.example.test/v1 FISTRON_MODEL_NAME=m
 args="$(cat "$tmp/args")"
 config="$(cat "$tmp/temp/fistron/fistron.toml")"
@@ -45,4 +50,9 @@ if grep -qx -- '--verify' <<<"$args"; then fail "--verify without a command"; fi
 grep -q 'base_url = "https://llm.example.test/v1"' <<<"$config" || fail "the own model"
 grep -q 'api_key_env = "FISTRON_LLM_API_KEY"' <<<"$config" || fail "the key's variable"
 grep -q 'repair = "own"' <<<"$config" || fail "the role repair"
+run FISTRON_VERIFY_WORKFLOW=ci.yml FISTRON_HEAD_BRANCH=fistron/verify/abc-g1
+args="$(cat "$tmp/args")"
+grep -qx -- '--verify-workflow' <<<"$args" || fail "no --verify-workflow"
+grep -qx -- 'FISTRON_HEAD_BRANCH' <<<"$args" || fail "the head branch's name"
+grep -q 'fistron/verify/\*)' "$tmp/temp/fistron/inside.sh" || fail "the verdict's branch"
 echo "run.sh: all checks passed"
